@@ -5,22 +5,34 @@ from .models import Order, Product, PromoCode
 from .filters import OrderFilter, PromoCodeFilter, ProductFilter
 from .serializers import OrderSerializer, ProductSerializer, PromoCodeSerializer
 from .permissions import IsAdminOrReadOnly , IsAdminOrOwner
-from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from .tasks import send_order_confirmation_email
-
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.throttling import ScopedRateThrottle
 
 class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'products'  
     queryset = Product.objects.filter(stock__gt=0)
-    filter_backends = [DjangoFilterBackend]
+    permission_classes = [IsAdminOrReadOnly]
     filterset_class = ProductFilter
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='name', description="Filter products by **name (case insensitive)**", required=False, type=str),
+            OpenApiParameter(name='price__gte', description="Filter products with a price **greater than or equal** to this value", required=False, type=float),
+            OpenApiParameter(name='price__lte', description="Filter products with a price **less than or equal** to this value", required=False, type=float),
+            OpenApiParameter(name='stock__gte', description="Filter products with stock **greater than or equal** to this value", required=False, type=int),
+            OpenApiParameter(name='stock__lte', description="Filter products with stock **less than or equal** to this value", required=False, type=int),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
     
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated , IsAdminOrOwner]
-    filter_backends = [DjangoFilterBackend]
     filterset_class = OrderFilter
 
     def get_queryset(self):
@@ -69,6 +81,38 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.data)
     
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='total_price__gte', description="Filter orders with a total price **greater than or equal** to this value", required=False, type=float
+            ),
+            OpenApiParameter(
+                name='total_price__lte', description="Filter orders with a total price **less than or equal** to this value", required=False, type=float
+            ),
+            OpenApiParameter(
+                name='discount__gte', description="Filter orders with a discount **greater than or equal** to this value", required=False, type=float
+            ),
+            OpenApiParameter(
+                name='discount__lte', description="Filter orders with a discount **less than or equal** to this value", required=False, type=float
+            ),
+            OpenApiParameter(
+                name='created_at__gte', description="Filter orders created **after** this datetime (format: YYYY-MM-DDTHH:MM:SSZ)", required=False, type=str
+            ),
+            OpenApiParameter(
+                name='created_at__lte', description="Filter orders created **before** this datetime (format: YYYY-MM-DDTHH:MM:SSZ)", required=False, type=str
+            ),
+            OpenApiParameter(
+                name='promo_code', description="Filter orders by **exact promo code**", required=False, type=str
+            ),
+            OpenApiParameter(
+                name='user_email', description="Filter orders by **user's email (case insensitive)**", required=False, type=str
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """List all orders (for staff and superuser)"""
+        return super().list(request, *args, **kwargs)
+    
     def destroy(self, request, *args, **kwargs):
         """Delete an order using the serializer's delete method"""
         instance = self.get_object()
@@ -79,7 +123,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 class PromoCodeViewSet(viewsets.ModelViewSet):
     serializer_class = PromoCodeSerializer
-    filter_backends = [DjangoFilterBackend]
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = PromoCodeFilter
 
@@ -91,3 +134,18 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
             start_at__lte=timezone.now(),
             ended_at__gte=timezone.now()
         )
+    
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='coupon_code', description="Filter promo codes by **coupon code (contains search)**", required=False, type=str),
+            OpenApiParameter(name='coupon_name', description="Filter promo codes by **coupon name (contains search)**", required=False, type=str),
+            OpenApiParameter(name='type', description="Filter promo codes by **exact type**", required=False, type=str),
+            OpenApiParameter(name='fixed_amount__gte', description="Filter promo codes where fixed amount is **greater than or equal** to this value", required=False, type=float),
+            OpenApiParameter(name='fixed_amount__lte', description="Filter promo codes where fixed amount is **less than or equal** to this value", required=False, type=float),
+            OpenApiParameter(name='start_at__gte', description="Filter promo codes with a start date **after this date** (format: YYYY-MM-DDTHH:MM:SSZ)", required=False, type=str),
+            OpenApiParameter(name='start_at__lte', description="Filter promo codes with a start date **before this date** (format: YYYY-MM-DDTHH:MM:SSZ)", required=False, type=str),
+            OpenApiParameter(name='is_active', description="Filter active promo codes (**true/false**)", required=False, type=bool),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
