@@ -3,6 +3,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.response import Response
 from rest_framework import generics , permissions , authentication
 from .serializers import UserSerializer
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import UserFilter
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -41,5 +43,8 @@ class UserListView(generics.ListAPIView):
     permission_classes = (permissions.IsAdminUser,)
     authentication_classes = (authentication.TokenAuthentication , )
     queryset = User.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
+    
     
     

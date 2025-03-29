@@ -2,6 +2,9 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Product, PromoCode
 from django.db import transaction
+from django.contrib.auth import get_user_model
+from user.serializers import UserSerializer
+User = get_user_model()
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -69,11 +72,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True , required=True)
     coupon_code = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Order
         fields = ['id', 'user', 'items', 'total_price', 'coupon_code', 'discount', 'created_at']
-        read_only_fields = ['user', 'total_price', 'discount', 'created_at']
+        read_only_fields = ['total_price', 'discount', 'created_at']
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')

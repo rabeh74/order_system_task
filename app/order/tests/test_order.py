@@ -4,8 +4,8 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from order.models import Order, OrderItem, Product, PromoCode
 from django.utils import timezone
-from unittest.mock import patch
-
+from decimal import Decimal
+from datetime import timedelta
 
 User = get_user_model()
 
@@ -52,10 +52,9 @@ class OrderViewSetTestCase(APITestCase):
     def test_get_queryset_unauthenticated(self):
         """Test that unauthenticated users are denied access"""
 
-        self.client.logout()  # Explicitly logout
         self.client.force_authenticate(user=None)  
         response = self.client.get(self.list_url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     
     def test_create_order_success(self):
@@ -240,3 +239,170 @@ class OrderViewSetTestCase(APITestCase):
         
         self.assertEqual(self.product1.stock, initial_stock_product1 + self.order_item.quantity)  
         self.assertEqual(self.product2.stock, initial_stock_product2 - 2) 
+    
+    def test_delete_order(self):
+        """Test deleting an order"""
+        response = self.client.delete(self.detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Order.objects.count(), 0)
+        self.product1.refresh_from_db()
+        self.assertEqual(self.product1.stock, 15)
+    
+
+class OrderFilterTests(APITestCase):
+    def setUp(self):
+        # Create users
+        self.admin_user = User.objects.create_superuser(
+            email="admin@example.com",
+            password="securepassword123"
+        )
+        self.user = User.objects.create_user(
+            email="test@example.com",
+            password="securepassword123"
+        )
+        self.another_user = User.objects.create_user(
+            email="another@example.com",
+            password="securepassword123"
+        )
+        
+        # Create promo codes
+        now = timezone.now()
+        self.promo_code1 = PromoCode.objects.create(
+            coupon_code="DISCOUNT10",
+            coupon_name="10% Discount",
+            type="PERCENTAGE",
+            discount_percentage=10,
+            fixed_amount=0,
+            start_at=now - timedelta(days=10),
+            ended_at=now + timedelta(days=10),
+            is_active=True
+        )
+        self.promo_code2 = PromoCode.objects.create(
+            coupon_code="FIXED20",
+            coupon_name="$20 Off",
+            type="FIXED",
+            fixed_amount=Decimal('20.00'),
+            start_at=now - timedelta(days=5),
+            ended_at=now + timedelta(days=5),
+            is_active=True
+        )
+        
+        # Create orders
+        self.order1 = Order.objects.create(
+            user=self.user,
+            total_price=Decimal('150.00'),
+            discount=Decimal('15.00'),
+            promo_code=self.promo_code1
+        )
+        self.order2 = Order.objects.create(
+            user=self.user,
+            total_price=Decimal('200.00'),
+            discount=Decimal('20.00'),
+            promo_code=self.promo_code2
+        )
+        self.order3 = Order.objects.create(
+            user=self.another_user,
+            total_price=Decimal('75.00'),
+            discount=Decimal('1.00'),
+        )
+        
+        # Create products
+        self.product1 = Product.objects.create(
+            name="Premium Headphones",
+            price=Decimal('99.99'),
+            stock=50
+        )
+        self.product2 = Product.objects.create(
+            name="Bluetooth Speaker",
+            price=Decimal('49.99'),
+            stock=100
+        )
+        self.product3 = Product.objects.create(
+            name="USB-C Cable",
+            price=Decimal('9.99'),
+            stock=200
+        )
+        
+        # Authenticate
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_order_filter_by_total_price(self):
+        # Test gte filter
+        url = reverse('order-list') + '?total_price__gte=100'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
+        
+        # Test lte filter
+        url = reverse('order-list') + '?total_price__lte=100'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+        
+        # Test range filter
+        url = reverse('order-list') + '?total_price__gte=100&total_price__lte=175'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+
+    def test_order_filter_by_discount(self):
+        # Test gte filter
+        
+        url = reverse('order-list') + '?discount__gte=15'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
+        
+        # Test lte filter
+        url = reverse('order-list') + '?discount__lte=10'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+
+    def test_order_filter_by_created_at(self):
+        now = timezone.now()
+        date_gte = (now - timedelta(days=2.5)).strftime('%Y-%m-%dT%H:%M:%S')
+        date_lte = (now - timedelta(days=2.5)).strftime('%Y-%m-%dT%H:%M:%S')
+        self.order1.created_at = now - timedelta(days=3)
+        self.order1.save()
+        # Test gte filter
+        url = reverse('order-list') + f'?created_at__gte={date_gte}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
+        
+        # Test lte filter
+        url = reverse('order-list') + f'?created_at__lte={date_lte}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+
+    def test_order_filter_by_promo_code(self):
+        url = reverse('order-list') + '?promo_code=DISCOUNT10'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+        self.assertEqual(response.data[0]['id'], self.order1.id)
+
+    def test_order_filter_by_user_email(self):
+        url = reverse('order-list') + '?user_email=test@example'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
+        
+        url = reverse('order-list') + '?user_email=another'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)  
+
+    def test_order_filter_by_user(self):
+        url = reverse('order-list') + f'?user={self.user.id}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
+
+    def test_order_multiple_filters(self):
+        url = reverse('order-list') + f'?total_price__gte=100&discount__gte=15&user={self.user.id}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)  
