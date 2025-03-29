@@ -97,7 +97,6 @@ class OrderViewSetTestCase(APITestCase):
             'coupon_code': 'INVALIDCODE'
         }
         response = self.client.post(self.list_url, data, format='json')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('Invalid promo code', response.data['coupon_code']['error'])
 

@@ -16,13 +16,6 @@ services:
       sh -c "
         python manage.py migrate &&
         python manage.py runserver 0.0.0.0:8000"
-    # environment:
-    #   # Environment variables for Django to connect to the database
-    #   - DB_HOST=db
-    #   - DB_NAME=${DB_NAME:-order_db}
-    #   - DB_USER=${DB_USER:-order_user}
-    #   - DB_PASS=${DB_PASSWORD:-order_password}
-    #   - DEBUG=1  # Enable debug mode
     depends_on:
       - db
 
