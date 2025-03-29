@@ -1,0 +1,41 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Order Confirmation</title>
+    <style type="text/css">
+        /* Basic styles that work in most email clients */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.4;
+            color: #333333;
+        }
+    </style>
+</head>
+<body>
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+            <td align="center" valign="top">
+                <table width="600" border="0" cellspacing="0" cellpadding="20">
+                    <tr>
+                        <td>
+                            <h2 style="color: #0066cc;">Thank you for your order, {{ user_first_name }}!</h2>
+                            <p>Here are your order details:</p>
+                            <p><strong>Order ID:</strong> {{ order_id }}</p>
+                            <p><strong>Total Price:</strong> ${{ total_price }}</p>
+                            <p><strong>Discount:</strong> ${{ discount }}</p>
+                            <h3 style="color: #0066cc;">Items:</h3>
+                            <ul style="margin-left: 20px; padding-left: 0;">
+                                {% for item in items %}
+                                    <li>{{ item.product_name }} (Qty: {{ item.quantity }})</li>
+                                {% endfor %}
+                            </ul>
+                            <p>Best regards,<br/>The Order Team</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
