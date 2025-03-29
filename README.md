@@ -1,25 +1,46 @@
-# Order System API
+# Order Management System API
 
-A robust Django REST API for managing an e-commerce order system with user authentication, product management, and order processing.
+A production-ready Django REST API for e-commerce order management with JWT authentication, product catalog, and order processing workflows.
 
-## Features
+## Key Features
 
-- User Authentication with JWT
-- Product Management
-- Order Processing with Promo Codes
-- Asynchronous Task Processing with Celery
-- Containerized with Docker
-- RESTful API with Django REST Framework
+### Authentication
+- JWT token-based authentication
+- Custom token claims with user details
+- Secure password handling with validation
+- Role-based access control (Admin/User)
 
-## Tech Stack
+### Product Management
+- CRUD operations for products
+- Inventory tracking with stock levels
+- Cached product listings
+- Advanced filtering and searching
 
-- Python 3.x
-- Django 4.2.7
-- Django REST Framework 3.14.0
-- PostgreSQL
-- Celery 5.3.4
-- Redis 5.0.1
-- Docker
+### Order Processing
+- Complete order lifecycle management
+- Promo code integration:
+  - Fixed amount discounts
+  - Percentage-based discounts
+  - Validity period enforcement
+- Automatic price calculations
+- Order confirmation emails (Celery async)
+
+### Performance
+- Optimized database queries
+- Selective field loading
+- Pagination and filtering
+- Redis caching layer
+
+## Technology Stack
+
+| Component              | Technology |
+|------------------------|------------|
+| Framework              | Django 4.2.7 + DRF 3.14.0 |
+| Database               | PostgreSQL 13 |
+| Authentication         | JWT (SimpleJWT) |
+| Async Tasks            | Celery + Redis |
+| Containerization       | Docker + Docker Compose |
+| API Documentation      | DRF Spectacular (Swagger/OpenAPI) |
 
 ## Project Structure
 
