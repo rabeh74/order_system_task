@@ -82,8 +82,6 @@ class OrderViewSetTestCase(APITestCase):
         self.assertEqual(order.promo_code.coupon_code, 'SAVE10')
         self.assertEqual(order.items.count(), 2)
         self.assertEqual(order.status , "PENDING")
-        
-        
 
     def test_create_order_invalid_data(self):
         """Test order creation with invalid data (e.g., missing items)"""
@@ -99,8 +97,9 @@ class OrderViewSetTestCase(APITestCase):
             'coupon_code': 'INVALIDCODE'
         }
         response = self.client.post(self.list_url, data, format='json')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 'Invalid promo code')
+        self.assertIn('Invalid promo code', response.data['coupon_code']['error'])
 
     def test_update_order_full(self):
         """Test full update of an order (replacing items and promo code)"""
@@ -161,7 +160,7 @@ class OrderViewSetTestCase(APITestCase):
         }
         response = self.client.put(self.detail_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], 'Invalid promo code')
+        self.assertIn('Invalid promo code', response.data['coupon_code']['error'])
 
     def test_retrieve_order(self):
         """Test retrieving an order"""
@@ -247,6 +246,24 @@ class OrderViewSetTestCase(APITestCase):
         self.assertEqual(Order.objects.count(), 0)
         self.product1.refresh_from_db()
         self.assertEqual(self.product1.stock, 15)
+    
+    def test_promo_code_used_once_by_user(self):
+        """Test that a promo code can only be used once by a user"""
+        self.order.promo_code = self.promo_code
+        self.order.save()
+
+        coupon_code = self.promo_code.coupon_code
+        data = {
+            'items': [
+                {'product': self.product1.id, 'quantity': 2},
+                {'product': self.product2.id, 'quantity': 1}
+            ],
+            'coupon_code': coupon_code
+        }
+        response = self.client.post(self.list_url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('this promo code has been used before', response.data['coupon_code']['error'])
+        
     
 
 class OrderFilterTests(APITestCase):

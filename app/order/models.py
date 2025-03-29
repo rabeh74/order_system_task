@@ -37,12 +37,12 @@ class PromoCode(TimeStampedModel):
     def __str__(self):
         return f"{self.coupon_name} ({self.coupon_code})"
 
-    @property
-    def is_valid(self):
+    def is_valid(self , user):
         now = timezone.now()
         return (
             self.is_active and
-            self.start_at <= now <= self.ended_at  
+            self.start_at <= now <= self.ended_at and
+            not Order.objects.filter(user=user, promo_code=self).exists()
         )
     
     def get_discount(self , amount):

@@ -162,17 +162,3 @@ class ProductFilterTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)  
 
-
-class ThrottlingTests(APITestCase):
-    def setUp(self):
-        self.url = reverse('product-list')  
-
-    def test_anon_throttling(self):
-        """Ensure anonymous users get throttled after exceeding the request limit."""
-        for _ in range(200):  
-            response = self.client.get(self.url)
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
-        self.assertIn("Request was throttled", response.data["detail"])

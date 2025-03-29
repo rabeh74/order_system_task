@@ -81,17 +81,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop('items')
-        coupon_code = validated_data.pop('coupon_code', None)
+        promo_code = validated_data.pop('coupon_code', None)
         order = Order.objects.create(user=validated_data['user'])
 
         self._create_order_items(order, items_data)
         
-        if coupon_code:
-            try:
-                promo_code = PromoCode.objects.get(coupon_code=coupon_code)
-                order.promo_code = promo_code
-            except PromoCode.DoesNotExist:
-                raise serializers.ValidationError({"error": "Invalid promo code"})
+        if promo_code:
+            order.promo_code = promo_code
 
         order.update_total_price()
         order.save()
@@ -99,18 +95,14 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop('items', [])
-        coupon_code = validated_data.pop('coupon_code', None)
+        promo_code = validated_data.pop('coupon_code', None)
     
         if items_data:
             self._add_quantity_to_product_stock(instance)
             self._create_order_items(instance, items_data)
             
-        if coupon_code:
-            try:
-                promo_code = PromoCode.objects.get(coupon_code=coupon_code)
-                instance.promo_code = promo_code
-            except PromoCode.DoesNotExist:
-                raise serializers.ValidationError({"error": "Invalid promo code"})
+        if promo_code:
+            instance.promo_code = promo_code
         
         instance.update_total_price()
         instance.save()
@@ -148,3 +140,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
         order_items.delete()
         order.save()
+    
+    def validate_coupon_code(self, value):
+        user = self.context['request'].user
+        try:
+            promo_code = PromoCode.objects.get(coupon_code=value)
+            if not promo_code.is_valid(user=user):
+                raise serializers.ValidationError({"error": "Invalid promo code or this promo code has been used before"})
+            return promo_code
+        except PromoCode.DoesNotExist:
+            raise serializers.ValidationError({"error": "Invalid promo code"})
