@@ -6,7 +6,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@shared_task
+@shared_task(
+    autoretry_for=(Exception,), 
+    retry_kwargs={'max_retries': 3}, 
+    retry_backoff=True, 
+    retry_backoff_max=300, 
+    retry_jitter=True 
+)
 def send_order_confirmation_email(order_id, user_email, user_first_name, items_data, total_price, discount):
     """Send an order confirmation email with pre-fetched data as an HTML message"""
     try:

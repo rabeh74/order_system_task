@@ -161,6 +161,7 @@ REST_FRAMEWORK = {
         'anon': '100/day',  
         'user': '1000/day',
         'products': '200/hour',
+        'registration': '100/day',
     },
 }
 

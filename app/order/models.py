@@ -38,15 +38,32 @@ class PromoCode(TimeStampedModel):
         return f"{self.coupon_name} ({self.coupon_code})"
 
     def is_valid(self , user):
+        """Check if promo code is valid for a specific user.
+        
+        Args:
+            user: The user attempting to use the promo code
+            
+        Returns:
+            bool: True if the code is active, within date range, and not used by this user
+        """
         now = timezone.now()
-        return (
-            self.is_active and
-            self.start_at <= now <= self.ended_at and
-            not Order.objects.filter(user=user, promo_code=self).exists()
-        )
+        is_within_date_range = self.start_at <= now <= self.ended_at
+        is_first_use = not Order.objects.filter(user=user, promo_code=self).exists()
+        
+        return self.is_active and is_within_date_range and is_first_use
     
     def get_discount(self , amount):
-        """return discount amount"""
+        """Calculate discount amount based on promo type.
+        
+        Args:
+            amount: The base amount to calculate discount from
+            
+        Returns:
+            Decimal: The calculated discount amount
+            
+        Raises:
+            ValueError: If amount is negative
+        """
         if self.type == 'FIXED':
             return self.fixed_amount
         elif self.type == 'PERCENTAGE':
@@ -72,7 +89,7 @@ class Order(TimeStampedModel):
     def update_total_price(self):
         """Recalculate and save total_price"""
         self.total_price = sum(item.price for item in self.items.all())
-        if self.promo_code and self.promo_code.is_valid:
+        if self.promo_code and self.promo_code.is_valid(self.user):
             self.apply_discount()
         self.save()
 
