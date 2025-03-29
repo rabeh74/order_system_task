@@ -74,6 +74,7 @@ class Order(TimeStampedModel):
         self.total_price = sum(item.price for item in self.items.all())
         if self.promo_code and self.promo_code.is_valid:
             self.apply_discount()
+        self.save()
 
     def apply_discount(self):
         """Apply discount if there's a promo code"""

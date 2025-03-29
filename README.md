@@ -130,7 +130,7 @@ docker-compose exec app celery -A order_processing beat --loglevel=info
 
 ## API Documentation
 
-The API documentation is available at `/api/schema/swagger-ui/` when running the server.
+The API documentation is available at `/api/docs/swagger/` when running the server.
 
 ## Testing
 
