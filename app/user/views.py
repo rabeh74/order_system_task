@@ -6,7 +6,7 @@ from .serializers import UserSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import UserFilter
 from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from .permissions import IsOwner
 
 User = get_user_model()
 
@@ -82,11 +82,10 @@ class UserRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     - Handles password changes securely
     """
     serializer_class = UserSerializer
-    
-    def get_object(self):
-        """Always return the currently authenticated user."""
-        return self.request.user
-    
+    permission_classes = [permissions.IsAuthenticated , IsOwner]
+    queryset = User.objects.all()
+
+
     def update(self, request, *args, **kwargs):
         """Handle profile updates with proper response formatting."""
         partial = kwargs.pop('partial', True)

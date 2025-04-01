@@ -16,6 +16,7 @@ from drf_spectacular.utils import (
 )
 from rest_framework.throttling import ScopedRateThrottle
 from django.core.cache import cache
+from .pagination import ProductPagination
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -32,6 +33,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.filter(stock__gt=0)
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = ProductFilter
+    pagination_class = ProductPagination
 
     @extend_schema(
         summary="List all available products",

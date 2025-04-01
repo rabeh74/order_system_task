@@ -27,7 +27,7 @@ class ProductViewSetTestCase(APITestCase):
         """Test that anyone can list products"""
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_retrieve_product_anyone(self):
         """Test that anyone can retrieve a product"""
@@ -73,8 +73,8 @@ class ProductViewSetTestCase(APITestCase):
         response = self.client.get(self.list_url)
         Product.objects.create(name='mobile', price=999.99, stock=0)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], 'Laptop')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['name'], 'Laptop')
 
 
 class ProductFilterTests(APITestCase):
@@ -112,53 +112,53 @@ class ProductFilterTests(APITestCase):
         url = reverse('product-list') + '?name=cable'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)  
+        self.assertEqual(len(response.data['results']), 2)  
         
         url = reverse('product-list') + '?name=headphones'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)     
+        self.assertEqual(len(response.data['results']), 1)     
 
     def test_product_filter_by_price(self):
         url = reverse('product-list') + '?price__gte=50'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)  
+        self.assertEqual(len(response.data['results']), 1)  
         
         url = reverse('product-list') + '?price__lte=20'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)  
+        self.assertEqual(len(response.data['results']), 2)  
         
         url = reverse('product-list') + '?price__gte=10&price__lte=50'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)  
+        self.assertEqual(len(response.data['results']), 2)
 
     def test_product_filter_by_stock(self):
         url = reverse('product-list') + '?stock__gte=150'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)  
+        self.assertEqual(len(response.data['results']), 2)  
         
         url = reverse('product-list') + '?stock__lte=75'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)  
+        self.assertEqual(len(response.data['results']), 1)  
         
         url = reverse('product-list') + '?stock__gte=75&stock__lte=150'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2)  
+        self.assertEqual(len(response.data['results']), 2)  
 
     def test_product_multiple_filters(self):
         url = reverse('product-list') + '?name=cable&price__lte=15'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 2) 
+        self.assertEqual(len(response.data['results']), 2) 
         
         url = reverse('product-list') + '?name=cable&stock__gte=175'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data), 1)  
+        self.assertEqual(len(response.data['results']), 1)  
 

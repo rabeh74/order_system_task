@@ -166,5 +166,15 @@ class UserAPITests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 5)
+    
+    def test_user_update_another_user(self):
+        """
+        Ensure a user cannot update another user's details.
+        """
+        another_user = create_user(email='test5@example.com', password='testpass123')
+        self.client.force_authenticate(user=another_user)
+        response = self.client.put(self.user_update_url, {"email": "another_user@email.com"})
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     
